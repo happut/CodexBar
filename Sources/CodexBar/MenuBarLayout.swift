@@ -494,6 +494,8 @@ enum MenuBarLayoutToken: Codable, Hashable, Sendable {
     /// `runsOut` answers "when does this end"; this token answers "how far off the even rate am I".
     case pace(window: PercentWindow)
     case usageBar
+    /// Graphical progress bar for a semantic window, drawn as an `NSTextAttachment` mini-bar.
+    case progressBar(window: PercentWindow)
     case resetCountdown
     case resetAbsolute
     /// Explicit reset windows keep separate discriminators so persisted automatic tokens stay unchanged.
@@ -539,19 +541,21 @@ enum MenuBarLayoutToken: Codable, Hashable, Sendable {
     /// failing the whole blob and losing the user's arrangement.
     var hasReleasedRepresentation: Bool {
         switch self {
-        case .extraPercent, .windowResetCountdown, .windowResetAbsolute: false
+        case .extraPercent, .windowResetCountdown, .windowResetAbsolute, .progressBar: false
         default: true
         }
     }
 
     var hasV3Representation: Bool {
-        if case .extraPercent = self { return false }
-        return true
+        switch self {
+        case .extraPercent, .progressBar: false
+        default: true
+        }
     }
 
     var hasLegacyRepresentation: Bool {
         switch self {
-        case .conditional, .extraPercent, .hidden, .windowResetCountdown, .windowResetAbsolute: false
+        case .conditional, .extraPercent, .hidden, .windowResetCountdown, .windowResetAbsolute, .progressBar: false
         default: true
         }
     }
@@ -811,6 +815,7 @@ enum MenuBarLayoutPreset: String, CaseIterable, Identifiable, Sendable {
     case iconOnly
     case percentAndReset
     case compactStacked
+    case barsStacked
     case custom
 
     var id: String {
@@ -834,6 +839,11 @@ enum MenuBarLayoutPreset: String, CaseIterable, Identifiable, Sendable {
             MenuBarLayout(lines: [
                 [.percent(window: .session)],
                 [.percent(window: .weekly)],
+            ])
+        case .barsStacked:
+            MenuBarLayout(lines: [
+                [.progressBar(window: .session), .separatorDot, .windowResetCountdown(window: .session)],
+                [.progressBar(window: .weekly), .separatorDot, .windowResetCountdown(window: .weekly)],
             ])
         case .custom:
             nil

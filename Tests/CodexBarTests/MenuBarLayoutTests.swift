@@ -26,6 +26,10 @@ struct MenuBarLayoutTests {
                 .pace(window: .weekly),
                 .pace(window: .automatic),
                 .usageBar,
+                .progressBar(window: .session),
+                .progressBar(window: .weekly),
+                .progressBar(window: .scopedWeekly),
+                .progressBar(window: .automatic),
             ],
             [
                 .resetCountdown,
@@ -820,6 +824,21 @@ struct MenuBarLayoutTests {
         #expect(!token.hasReleasedRepresentation)
         #expect(!token.hasLegacyRepresentation)
         #expect(MenuBarLayout(lines: [[.icon, token]]).legacyCompatible() == MenuBarLayout(lines: [[.icon]]))
+    }
+
+    @Test
+    func `progress bar token labels by window and stacks as a preset`() throws {
+        let sessionBar = MenuBarLayoutToken.progressBar(window: .session)
+        let weeklyBar = MenuBarLayoutToken.progressBar(window: .weekly)
+
+        let encoded = try JSONEncoder().encode(sessionBar)
+        #expect(try JSONDecoder().decode(MenuBarLayoutToken.self, from: encoded) == sessionBar)
+        #expect(sessionBar.editorLabel(provider: .codex) == L("%@ %@", L("Session"), L("menu_bar_layout_token_bar")))
+        #expect(weeklyBar.editorLabel(provider: .codex) == L("%@ %@", L("Weekly"), L("menu_bar_layout_token_bar")))
+        #expect(MenuBarLayoutPreset.barsStacked.layout == MenuBarLayout(lines: [
+            [.progressBar(window: .session), .separatorDot, .windowResetCountdown(window: .session)],
+            [.progressBar(window: .weekly), .separatorDot, .windowResetCountdown(window: .weekly)],
+        ]))
     }
 
     @Test

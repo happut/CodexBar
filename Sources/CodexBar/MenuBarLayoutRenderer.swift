@@ -714,6 +714,13 @@ final class MenuBarLayoutRenderer {
                 value,
                 accessibilityText: L("Usage bar, %d of 3 filled", filled),
                 attributes: style.attributes)
+        case let .progressBar(window):
+            return self.progressBarToken(
+                window,
+                data: data,
+                style: style,
+                options: options,
+                providerTintColor: providerTintColor)
         case .resetCountdown, .resetAbsolute:
             let text = MenuBarLayoutResetText(window: data.automatic, provider: data.provider, now: options.now)
             return self.resetToken(
@@ -1123,6 +1130,112 @@ final class MenuBarLayoutRenderer {
             return size == .small ? 8 : 9
         }
         return size == .small ? 14 : 18
+    }
+}
+
+extension MenuBarLayoutRenderer {
+    /// Graphical progress bar for one semantic window, embedded as an `NSTextAttachment` so the
+    /// status-item title keeps surrounding countdown text in the same line. The bar is a pre-tinted
+    /// bitmap (AppKit does not template-tint attachments), so it is cached by fill/style like the
+    /// rest of the title via `MenuBarLayoutTitleCache`.
+    private static func progressBarToken(
+        _ window: PercentWindow,
+        data: MenuBarLayoutRenderData,
+        style: TokenStyle,
+        options: MenuBarLayoutRenderOptions,
+        providerTintColor: NSColor?)
+        -> (value: NSAttributedString, accessibilityText: String?)
+    {
+        let accessibilityPrefix = self.windowAccessibilityLabel(window, data: data)
+        guard let rateWindow = self.window(window, data: data) else {
+            return self.textToken(
+                self.missingValue,
+                accessibilityText: L("%@ unavailable", accessibilityPrefix),
+                attributes: style.attributes)
+        }
+        let percent = options.showUsed ? rateWindow.usedPercent : rateWindow.remainingPercent
+        let clamped = percent.clamped(to: 0...100)
+        let tintColor = providerTintColor ?? style.foregroundColor
+        let barSize = self.progressBarSize(size: options.size, font: style.font)
+        let image = self.progressBarImage(
+            fillPercent: clamped,
+            size: barSize,
+            tint: tintColor,
+            stale: options.isStale && providerTintColor == nil)
+        let attachment = NSTextAttachment()
+        attachment.image = image
+        attachment.bounds = NSRect(
+            x: 0,
+            y: ((style.font.capHeight - barSize.height) / 2).rounded(),
+            width: barSize.width,
+            height: barSize.height)
+
+        // Keep the window label ("5h" / "W") beside the bar so stacked rows stay unambiguous.
+        let prefix: String
+        switch window {
+        case .session:
+            prefix = self.primaryLabel(data: data).flatMap(\.first).map { String($0).uppercased() }
+                ?? Self.sessionPrefix(rateWindow)
+        case .weekly:
+            let secondaryLabel = Self.secondaryLabel(data: data)
+            prefix = secondaryLabel.flatMap(\.first).map { String($0).uppercased() } ?? "W"
+        case .scopedWeekly:
+            prefix = data.scopedWeeklyTitle.map { String($0.prefix(1)).uppercased() } ?? "F"
+        case .automatic:
+            prefix = ""
+        }
+
+        let result = NSMutableAttributedString()
+        if !prefix.isEmpty {
+            let label = NSAttributedString(string: "\(prefix) ", attributes: style.attributes)
+            result.append(label)
+        }
+        let attachmentValue = NSMutableAttributedString(attachment: attachment)
+        attachmentValue.addAttributes(
+            style.attributes,
+            range: NSRange(location: 0, length: attachmentValue.length))
+        result.append(attachmentValue)
+
+        let percentText = UsageFormatter.percentString(clamped)
+        let accessibility = L("%@ %@", accessibilityPrefix, percentText)
+        return (result, accessibility)
+    }
+
+    private static func progressBarSize(size: MenuBarLayoutSize, font: NSFont) -> NSSize {
+        let height = max(4, (font.capHeight * 0.55).rounded())
+        let width: CGFloat = if font.pointSize <= 9 {
+            28
+        } else if size == .small {
+            32
+        } else {
+            40
+        }
+        return NSSize(width: width, height: height)
+    }
+
+    private static func progressBarImage(
+        fillPercent: Double,
+        size: NSSize,
+        tint: NSColor,
+        stale: Bool)
+        -> NSImage
+    {
+        let alpha: CGFloat = stale ? 0.55 : 1.0
+        let corner = min(size.width, size.height) / 2
+        return NSImage(size: size, flipped: false) { rect in
+            let track = NSBezierPath(roundedRect: rect, xRadius: corner, yRadius: corner)
+            tint.withAlphaComponent(0.22 * alpha).setFill()
+            track.fill()
+
+            let fillWidth = rect.width * fillPercent / 100
+            if fillWidth > 0 {
+                let fillRect = NSRect(x: 0, y: 0, width: min(fillWidth, rect.width), height: rect.height)
+                let fillPath = NSBezierPath(roundedRect: fillRect, xRadius: corner, yRadius: corner)
+                tint.withAlphaComponent(alpha).setFill()
+                fillPath.fill()
+            }
+            return true
+        }
     }
 }
 
