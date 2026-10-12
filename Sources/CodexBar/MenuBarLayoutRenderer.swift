@@ -685,7 +685,7 @@ final class MenuBarLayoutRenderer {
             let width = icon.size.height > 0 ? icon.size.width * height / icon.size.height : height
             attachment.bounds = NSRect(
                 x: 0,
-                y: ((style.font.capHeight - height) / 2).rounded() + CGFloat(options.verticalAdjustment),
+                y: self.attachmentYOrigin(height: height, style: style),
                 width: width,
                 height: height)
             let value = NSMutableAttributedString(attachment: attachment)
@@ -1211,7 +1211,7 @@ extension MenuBarLayoutRenderer {
         attachment.image = image
         attachment.bounds = NSRect(
             x: 0,
-            y: ((style.font.capHeight - barSize.height) / 2).rounded() + CGFloat(options.verticalAdjustment),
+            y: self.attachmentYOrigin(height: barSize.height, style: style),
             width: barSize.width,
             height: barSize.height)
 
@@ -1318,13 +1318,11 @@ extension MenuBarLayoutRenderer {
             stale: options.isStale && providerTintColor == nil)
         let attachment = NSTextAttachment()
         attachment.image = image
-        // Bias the pill toward the text's lower half so stacked first-rows do not clip the status item.
-        // Vertical nudge belongs in `bounds.origin.y`: attachments ignore `baselineOffset`.
-        let yOffset = ((style.font.capHeight - pillSize.height) / 2 + 1).rounded()
-            + CGFloat(options.verticalAdjustment)
+        // Centers on the text cap band and follows the run's baseline shift so the pill does not
+        // float above/below neighboring glyphs (stacked rows especially).
         attachment.bounds = NSRect(
             x: 0,
-            y: yOffset,
+            y: self.attachmentYOrigin(height: pillSize.height, style: style),
             width: pillSize.width,
             height: pillSize.height)
 
@@ -1352,13 +1350,22 @@ extension MenuBarLayoutRenderer {
         return (result, accessibility)
     }
 
-    /// Attachment runs drop `baselineOffset` so the user's vertical nudge is applied once, via
-    /// `NSAttachment.bounds.origin.y`, instead of also being carried as a glyph shift.
+    /// Attachment runs drop `baselineOffset` so the glyph shift is not applied twice. The same
+    /// shift is re-applied through `bounds.origin.y`, which is what AppKit actually uses to place
+    /// `NSTextAttachment` images — without it the meter sits on the unshifted baseline and looks
+    /// vertically off-center from the surrounding text (especially stacked rows at -3pt).
     private static func attachmentText(_ attachment: NSTextAttachment, style: TokenStyle) -> NSAttributedString {
         let value = NSMutableAttributedString(attachment: attachment)
         value.addAttributes(style.attributes, range: NSRange(location: 0, length: value.length))
         value.removeAttribute(.baselineOffset, range: NSRange(location: 0, length: value.length))
         return value
+    }
+
+    /// Centers a meter of `height` on the text cap band, then follows the run's `baselineOffset`
+    /// (stacked/single-line base plus the user's vertical adjustment).
+    private static func attachmentYOrigin(height: CGFloat, style: TokenStyle) -> CGFloat {
+        let shift = (style.attributes[.baselineOffset] as? NSNumber)?.doubleValue ?? 0
+        return ((style.font.capHeight - height) / 2).rounded() + CGFloat(shift)
     }
 
     private static func progressPillSize(font: NSFont) -> NSSize {
