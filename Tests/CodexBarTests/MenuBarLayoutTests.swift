@@ -839,6 +839,15 @@ struct MenuBarLayoutTests {
             [.progressBar(window: .session), .separatorDot, .windowResetCountdown(window: .session)],
             [.progressBar(window: .weekly), .separatorDot, .windowResetCountdown(window: .weekly)],
         ]))
+
+        // Downgrade projections must not leave orphan separators from dropped bar/reset tokens.
+        let barsStacked = try #require(MenuBarLayoutPreset.barsStacked.layout)
+        #expect(barsStacked.releasedCompatible() == MenuBarLayout.defaultLayout)
+        #expect(barsStacked.legacyCompatible() == MenuBarLayout.defaultLayout)
+        #expect(barsStacked.v3Compatible() == MenuBarLayout(lines: [
+            [.windowResetCountdown(window: .session)],
+            [.windowResetCountdown(window: .weekly)],
+        ]))
     }
 
     @Test

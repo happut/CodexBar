@@ -114,11 +114,13 @@ struct MenuBarLayoutEditorTests {
             .usageBar,
             .progressBar(window: .session),
             .progressBar(window: .weekly),
+            .progressBar(window: .scopedWeekly),
             .progressBar(window: .automatic),
             .pace(window: .session),
             .pace(window: .weekly),
             .pace(window: .automatic),
         ])
+        #expect(MenuBarLayoutPaletteTokens.conditionalBranch.contains(.progressBar(window: .scopedWeekly)))
         #expect(!MenuBarLayoutPaletteTokens.usage(provider: .codex, snapshot: cursor)
             .contains(.extraPercent(id: "cursor-grok-bot")))
         #expect(!MenuBarLayoutPaletteTokens.usage(provider: .cursor, snapshot: nil)

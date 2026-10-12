@@ -783,7 +783,7 @@ struct MenuBarLayout: Codable, Hashable, Sendable {
 
     private func projected(_ transform: (MenuBarLayoutToken) -> MenuBarLayoutToken?) -> MenuBarLayout {
         let projected = self.lines.map { line in
-            line.compactMap(transform)
+            Self.strippingOrphanSeparators(original: line, projected: line.compactMap(transform))
         }
         // Keep a trailing empty line only when the layout was already stacked with an empty line,
         // so an older release does not inherit a blank stacked row created purely by filtering.
@@ -791,6 +791,38 @@ struct MenuBarLayout: Codable, Hashable, Sendable {
             !line.isEmpty || self.lines[index].isEmpty
         }.map(\.element)
         return MenuBarLayout(lines: compacted)
+    }
+
+    /// Removes separators left behind only because neighboring tokens were dropped by a downgrade
+    /// projection (`bar · reset` must not degrade to a lone `·`). User-placed edge separators that
+    /// survive with content are kept as-is.
+    private static func strippingOrphanSeparators(
+        original: [MenuBarLayoutToken],
+        projected: [MenuBarLayoutToken])
+        -> [MenuBarLayoutToken]
+    {
+        let isSeparator: (MenuBarLayoutToken) -> Bool = { $0 == .separatorDot || $0 == .space }
+        guard !projected.allSatisfy(isSeparator) else { return [] }
+
+        var result = projected
+        if let first = original.first, !isSeparator(first) {
+            while let head = result.first, isSeparator(head) {
+                result.removeFirst()
+            }
+        }
+        if let last = original.last, !isSeparator(last) {
+            while let tail = result.last, isSeparator(tail) {
+                result.removeLast()
+            }
+        }
+        var collapsed: [MenuBarLayoutToken] = []
+        for token in result {
+            if isSeparator(token), let previous = collapsed.last, isSeparator(previous) {
+                continue
+            }
+            collapsed.append(token)
+        }
+        return collapsed
     }
 }
 

@@ -968,6 +968,19 @@ struct MenuBarLayoutRendererTests {
     }
 
     @Test
+    func `progress bar keeps balance text instead of drawing an automatic bar`() {
+        let renderer = MenuBarLayoutRenderer()
+        let output = renderer.render(
+            layout: MenuBarLayout(lines: [[.progressBar(window: .automatic)]]),
+            data: self.data(automaticUsedPercent: 80, provider: .deepseek, automaticText: "¥100.00"),
+            icon: nil,
+            options: self.options(showUsed: true))
+
+        #expect(output.attributedTitle.string == "¥100.00")
+        #expect(!output.attributedTitle.string.contains("\u{FFFC}"))
+    }
+
+    @Test
     func `progress bar drops from older layout projections`() {
         let token = MenuBarLayoutToken.progressBar(window: .session)
         #expect(!token.hasReleasedRepresentation)

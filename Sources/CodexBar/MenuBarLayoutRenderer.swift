@@ -1147,6 +1147,14 @@ extension MenuBarLayoutRenderer {
         -> (value: NSAttributedString, accessibilityText: String?)
     {
         let accessibilityPrefix = self.windowAccessibilityLabel(window, data: data)
+        // Balance-backed automatic lanes (DeepSeek, DeepInfra, …) override the automatic percent with
+        // text because the quota percent is meaningless. Never turn that override into a fake bar.
+        if window == .automatic, let automaticText = data.automaticText {
+            return self.textToken(
+                automaticText,
+                accessibilityText: L("%@ %@", accessibilityPrefix, automaticText),
+                attributes: style.attributes)
+        }
         guard let rateWindow = self.window(window, data: data) else {
             return self.textToken(
                 self.missingValue,
