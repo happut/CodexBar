@@ -1243,13 +1243,13 @@ extension MenuBarLayoutRenderer {
     }
 
     private static func progressBarSize(size: MenuBarLayoutSize, font: NSFont) -> NSSize {
-        let height = max(4, (font.capHeight * 0.55).rounded())
+        let height = max(5, (font.capHeight * 0.55).rounded())
         let width: CGFloat = if font.pointSize <= 9 {
-            28
-        } else if size == .small {
             32
+        } else if size == .small {
+            36
         } else {
-            40
+            44
         }
         return NSSize(width: width, height: height)
     }
@@ -1261,19 +1261,27 @@ extension MenuBarLayoutRenderer {
         stale: Bool)
         -> NSImage
     {
+        // Classic solid/hollow box meter (graphical form of the `usageBar` ▮▯ characters), kept as
+        // the original progress style alongside the newer `progressPill`.
         let alpha: CGFloat = stale ? 0.55 : 1.0
-        let corner = min(size.width, size.height) / 2
+        let segmentCount = 5
+        let gap: CGFloat = 2
+        let corner = min(size.height, 3) / 2
         return NSImage(size: size, flipped: false) { rect in
-            let track = NSBezierPath(roundedRect: rect, xRadius: corner, yRadius: corner)
-            tint.withAlphaComponent(0.22 * alpha).setFill()
-            track.fill()
-
-            let fillWidth = rect.width * fillPercent / 100
-            if fillWidth > 0 {
-                let fillRect = NSRect(x: 0, y: 0, width: min(fillWidth, rect.width), height: rect.height)
-                let fillPath = NSBezierPath(roundedRect: fillRect, xRadius: corner, yRadius: corner)
-                tint.withAlphaComponent(alpha).setFill()
-                fillPath.fill()
+            let segmentWidth = max(2, (rect.width - gap * CGFloat(segmentCount - 1)) / CGFloat(segmentCount))
+            let filled = Int((fillPercent.clamped(to: 0...100) / 100 * Double(segmentCount)).rounded())
+            for index in 0..<segmentCount {
+                let x = CGFloat(index) * (segmentWidth + gap)
+                let box = NSRect(x: x, y: 0, width: segmentWidth, height: rect.height)
+                let path = NSBezierPath(roundedRect: box, xRadius: corner, yRadius: corner)
+                if index < filled {
+                    tint.withAlphaComponent(alpha).setFill()
+                    path.fill()
+                } else {
+                    tint.withAlphaComponent(0.45 * alpha).setStroke()
+                    path.lineWidth = 1
+                    path.stroke()
+                }
             }
             return true
         }
