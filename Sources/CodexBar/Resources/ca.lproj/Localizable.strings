@@ -1451,7 +1451,6 @@
 "menu_bar_layout_token_weekly_pace" = "Ritme setmanal";
 "menu_bar_layout_token_auto_pace" = "Ritme automàtic";
 "menu_bar_layout_token_bar" = "Barra d'ús";
-"menu_bar_layout_token_pill" = "Píndola de progrés";
 "menu_bar_layout_token_resets_in" = "Es reinicia d'aquí a";
 "menu_bar_layout_token_reset_at" = "Reinici a";
 "menu_bar_layout_token_runs_out" = "S'esgota";
@@ -2513,3 +2512,12 @@
 "Pace sign" = "Signe del ritme";
 "Ahead of pace is +" = "Per sobre del ritme és +";
 "Reserve is +" = "La reserva és +";
+
+/* fal provider credentials */
+"Key with billing read access (BILLING or READONLY preset). Or set FAL_KEY." = "Clau amb accés de lectura a la facturació (perfil BILLING o READONLY). O defineix FAL_KEY.";
+
+/* FLORA provider credentials */
+"Needs billing permission on the workspace. Or set FLORA_API_KEY." = "Cal permís de facturació a l'espai de treball. O defineix FLORA_API_KEY.";
+"Required. The ws_… ID of the workspace the key can bill. Or set FLORA_WORKSPACE_ID." = "Obligatori. L'ID ws_… de l'espai de treball que la clau pot facturar. O defineix FLORA_WORKSPACE_ID.";
+"ak_…" = "ak_…";
+"ws_…" = "ws_…";

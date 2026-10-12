@@ -57,10 +57,6 @@ enum MenuBarLayoutPaletteTokens {
                 .progressBar(window: .weekly),
                 .progressBar(window: .scopedWeekly),
                 .progressBar(window: .automatic),
-                .progressPill(window: .session),
-                .progressPill(window: .weekly),
-                .progressPill(window: .scopedWeekly),
-                .progressPill(window: .automatic),
                 .pace(window: .session),
                 .pace(window: .weekly),
                 .pace(window: .automatic),
@@ -91,10 +87,6 @@ enum MenuBarLayoutPaletteTokens {
         .progressBar(window: .weekly),
         .progressBar(window: .scopedWeekly),
         .progressBar(window: .automatic),
-        .progressPill(window: .session),
-        .progressPill(window: .weekly),
-        .progressPill(window: .scopedWeekly),
-        .progressPill(window: .automatic),
         .pace(window: .session),
         .pace(window: .weekly),
         .pace(window: .automatic),
@@ -1117,7 +1109,7 @@ extension MenuBarLayoutToken {
         let window: PercentWindow? = switch self {
         case let .percent(window), let .pace(window),
              let .windowResetCountdown(window), let .windowResetAbsolute(window),
-             let .progressBar(window), let .progressPill(window): window
+             let .progressBar(window): window
         default: nil
         }
         guard let localizedLabel = window?.providerLabel(provider: provider) else { return nil }
@@ -1130,8 +1122,6 @@ extension MenuBarLayoutToken {
             L("%@: %@", localizedLabel, L("menu_bar_layout_token_reset_at"))
         case .progressBar:
             L("%@ %@", localizedLabel, L("menu_bar_layout_token_bar"))
-        case .progressPill:
-            L("%@ %@", localizedLabel, L("menu_bar_layout_token_pill"))
         default: nil
         }
     }
@@ -1154,8 +1144,6 @@ extension MenuBarLayoutToken {
         case .usageBar: L("menu_bar_layout_token_bar")
         case let .progressBar(window):
             L("%@ %@", Self.resetWindowLabel(window), L("menu_bar_layout_token_bar"))
-        case let .progressPill(window):
-            L("%@ %@", Self.resetWindowLabel(window), L("menu_bar_layout_token_pill"))
         case .resetCountdown: L("menu_bar_layout_token_resets_in")
         case .resetAbsolute: L("menu_bar_layout_token_reset_at")
         case let .windowResetCountdown(window):
@@ -1208,9 +1196,7 @@ extension MenuBarLayoutToken {
         case .accountLabel: "person.crop.circle"
         case .percent, .lanePercent, .extraPercent: "percent"
         case .pace: "speedometer"
-        case .usageBar: "chart.bar.fill"
-        case .progressBar: "chart.bar.fill"
-        case .progressPill: "capsule.fill"
+        case .usageBar, .progressBar: "chart.bar.fill"
         case .resetCountdown, .windowResetCountdown: "timer"
         case .resetAbsolute, .windowResetAbsolute: "clock"
         case .runsOut, .runsOutCompact: "hourglass.bottomhalf.filled"

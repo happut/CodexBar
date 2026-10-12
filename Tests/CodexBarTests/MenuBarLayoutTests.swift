@@ -28,8 +28,6 @@ struct MenuBarLayoutTests {
                 .usageBar,
                 .progressBar(window: .session), .progressBar(window: .weekly),
                 .progressBar(window: .scopedWeekly), .progressBar(window: .automatic),
-                .progressPill(window: .session), .progressPill(window: .weekly),
-                .progressPill(window: .scopedWeekly), .progressPill(window: .automatic),
             ],
             [
                 .resetCountdown,
@@ -836,17 +834,17 @@ struct MenuBarLayoutTests {
         #expect(sessionBar.editorLabel(provider: .codex) == L("%@ %@", L("Session"), L("menu_bar_layout_token_bar")))
         #expect(weeklyBar.editorLabel(provider: .codex) == L("%@ %@", L("Weekly"), L("menu_bar_layout_token_bar")))
         #expect(MenuBarLayoutPreset.barsStacked.layout == MenuBarLayout(lines: [
-            [.progressBar(window: .session), .separatorDot, .windowResetCountdown(window: .session)],
-            [.progressBar(window: .weekly), .separatorDot, .windowResetCountdown(window: .weekly)],
+            [.progressBar(window: .session), .windowResetCountdown(window: .session)],
+            [.progressBar(window: .weekly), .windowResetCountdown(window: .weekly)],
         ]))
 
-        // Downgrade projections must not leave orphan separators from dropped bar/reset tokens.
         let barsStacked = try #require(MenuBarLayoutPreset.barsStacked.layout)
-        #expect(barsStacked.releasedCompatible() == MenuBarLayout.defaultLayout)
-        #expect(barsStacked.legacyCompatible() == MenuBarLayout.defaultLayout)
+        let percentages = MenuBarLayout(lines: [[.percent(window: .session)], [.percent(window: .weekly)]])
+        #expect(barsStacked.releasedCompatible() == percentages)
+        #expect(barsStacked.legacyCompatible() == percentages)
         #expect(barsStacked.v3Compatible() == MenuBarLayout(lines: [
-            [.windowResetCountdown(window: .session)],
-            [.windowResetCountdown(window: .weekly)],
+            [.percent(window: .session), .windowResetCountdown(window: .session)],
+            [.percent(window: .weekly), .windowResetCountdown(window: .weekly)],
         ]))
     }
 

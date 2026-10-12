@@ -1443,7 +1443,6 @@
 "menu_bar_layout_token_weekly_pace" = "Veckotakt";
 "menu_bar_layout_token_auto_pace" = "Automatisk takt";
 "menu_bar_layout_token_bar" = "Användningsstapel";
-"menu_bar_layout_token_pill" = "Framstegspiller";
 "menu_bar_layout_token_resets_in" = "Återställs om";
 "menu_bar_layout_token_reset_at" = "Återställs kl.";
 "menu_bar_layout_token_runs_out" = "Tar slut";
@@ -2508,3 +2507,12 @@
 "Pace sign" = "Tecken för förbrukningstakt";
 "Ahead of pace is +" = "Över förbrukningstakten är +";
 "Reserve is +" = "Reserv är +";
+
+/* fal provider credentials */
+"Key with billing read access (BILLING or READONLY preset). Or set FAL_KEY." = "Nyckel med läsåtkomst till fakturering (förinställning BILLING eller READONLY). Eller ange FAL_KEY.";
+
+/* FLORA provider credentials */
+"Needs billing permission on the workspace. Or set FLORA_API_KEY." = "Kräver faktureringsbehörighet för arbetsytan. Eller ange FLORA_API_KEY.";
+"Required. The ws_… ID of the workspace the key can bill. Or set FLORA_WORKSPACE_ID." = "Obligatoriskt. ws_…-ID för arbetsytan som nyckeln kan fakturera. Eller ange FLORA_WORKSPACE_ID.";
+"ak_…" = "ak_…";
+"ws_…" = "ws_…";

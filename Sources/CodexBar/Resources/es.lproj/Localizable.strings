@@ -1443,7 +1443,6 @@
 "menu_bar_layout_token_weekly_pace" = "Ritmo semanal";
 "menu_bar_layout_token_auto_pace" = "Ritmo automático";
 "menu_bar_layout_token_bar" = "Barra de uso";
-"menu_bar_layout_token_pill" = "Píldora de progreso";
 "menu_bar_layout_token_resets_in" = "Se reinicia en";
 "menu_bar_layout_token_reset_at" = "Reinicio a las";
 "menu_bar_layout_token_runs_out" = "Se agota";
@@ -2507,3 +2506,12 @@
 "Pace sign" = "Signo del ritmo";
 "Ahead of pace is +" = "Por encima del ritmo es +";
 "Reserve is +" = "La reserva es +";
+
+/* fal provider credentials */
+"Key with billing read access (BILLING or READONLY preset). Or set FAL_KEY." = "Clave con acceso de lectura a la facturación (preajuste BILLING o READONLY). O define FAL_KEY.";
+
+/* FLORA provider credentials */
+"Needs billing permission on the workspace. Or set FLORA_API_KEY." = "Necesita permiso de facturación en el espacio de trabajo. O define FLORA_API_KEY.";
+"Required. The ws_… ID of the workspace the key can bill. Or set FLORA_WORKSPACE_ID." = "Obligatorio. El ID ws_… del espacio de trabajo que la clave puede facturar. O define FLORA_WORKSPACE_ID.";
+"ak_…" = "ak_…";
+"ws_…" = "ws_…";

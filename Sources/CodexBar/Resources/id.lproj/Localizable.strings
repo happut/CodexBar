@@ -1448,7 +1448,6 @@
 "menu_bar_layout_token_weekly_pace" = "Laju mingguan";
 "menu_bar_layout_token_auto_pace" = "Laju otomatis";
 "menu_bar_layout_token_bar" = "Bar penggunaan";
-"menu_bar_layout_token_pill" = "Kapsul progres";
 "menu_bar_layout_token_resets_in" = "Reset dalam";
 "menu_bar_layout_token_reset_at" = "Reset pukul";
 "menu_bar_layout_token_runs_out" = "Habis";
@@ -2512,3 +2511,12 @@
 "Pace sign" = "Tanda laju penggunaan";
 "Ahead of pace is +" = "Di atas laju adalah +";
 "Reserve is +" = "Cadangan adalah +";
+
+/* fal provider credentials */
+"Key with billing read access (BILLING or READONLY preset). Or set FAL_KEY." = "Kunci dengan akses baca penagihan (preset BILLING atau READONLY). Atau atur FAL_KEY.";
+
+/* FLORA provider credentials */
+"Needs billing permission on the workspace. Or set FLORA_API_KEY." = "Memerlukan izin penagihan di workspace. Atau atur FLORA_API_KEY.";
+"Required. The ws_… ID of the workspace the key can bill. Or set FLORA_WORKSPACE_ID." = "Wajib. ID ws_… workspace yang dapat ditagih oleh kunci. Atau atur FLORA_WORKSPACE_ID.";
+"ak_…" = "ak_…";
+"ws_…" = "ws_…";

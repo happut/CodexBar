@@ -1446,7 +1446,6 @@
 "menu_bar_layout_token_weekly_pace" = "Haftalık tempo";
 "menu_bar_layout_token_auto_pace" = "Otomatik tempo";
 "menu_bar_layout_token_bar" = "Kullanım çubuğu";
-"menu_bar_layout_token_pill" = "İlerleme hapı";
 "menu_bar_layout_token_resets_in" = "Sıfırlamaya";
 "menu_bar_layout_token_reset_at" = "Sıfırlama saati";
 "menu_bar_layout_token_runs_out" = "Biter";
@@ -2512,3 +2511,12 @@
 "Pace sign" = "Kullanım hızı işareti";
 "Ahead of pace is +" = "Hızın üzerinde kullanım +";
 "Reserve is +" = "Rezerv +";
+
+/* fal provider credentials */
+"Key with billing read access (BILLING or READONLY preset). Or set FAL_KEY." = "Faturalama okuma erişimi olan anahtar (BILLING veya READONLY ön ayarı). Ya da FAL_KEY değerini ayarlayın.";
+
+/* FLORA provider credentials */
+"Needs billing permission on the workspace. Or set FLORA_API_KEY." = "Çalışma alanında faturalama izni gerekir. Ya da FLORA_API_KEY değerini ayarlayın.";
+"Required. The ws_… ID of the workspace the key can bill. Or set FLORA_WORKSPACE_ID." = "Zorunlu. Anahtarın faturalayabildiği çalışma alanının ws_… kimliği. Ya da FLORA_WORKSPACE_ID değerini ayarlayın.";
+"ak_…" = "ak_…";
+"ws_…" = "ws_…";
