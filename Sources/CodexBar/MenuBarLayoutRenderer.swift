@@ -685,11 +685,14 @@ final class MenuBarLayoutRenderer {
             let width = icon.size.height > 0 ? icon.size.width * height / icon.size.height : height
             attachment.bounds = NSRect(
                 x: 0,
-                y: ((style.font.capHeight - height) / 2).rounded(),
+                y: ((style.font.capHeight - height) / 2).rounded() + CGFloat(options.verticalAdjustment),
                 width: width,
                 height: height)
             let value = NSMutableAttributedString(attachment: attachment)
             value.addAttributes(style.attributes, range: NSRange(location: 0, length: value.length))
+            // Attachment placement is bounds-based; a baselineOffset on the run would double-shift
+            // the image when the user nudge is already baked into `bounds.origin.y`.
+            value.removeAttribute(.baselineOffset, range: NSRange(location: 0, length: value.length))
             return (value, Self.iconAccessibilityText(data: data))
         case let .percent(window):
             return self.renderPercent(window, data: data, style: style, options: options)
@@ -1208,7 +1211,7 @@ extension MenuBarLayoutRenderer {
         attachment.image = image
         attachment.bounds = NSRect(
             x: 0,
-            y: ((style.font.capHeight - barSize.height) / 2).rounded(),
+            y: ((style.font.capHeight - barSize.height) / 2).rounded() + CGFloat(options.verticalAdjustment),
             width: barSize.width,
             height: barSize.height)
 
@@ -1232,11 +1235,7 @@ extension MenuBarLayoutRenderer {
             let label = NSAttributedString(string: "\(prefix) ", attributes: style.attributes)
             result.append(label)
         }
-        let attachmentValue = NSMutableAttributedString(attachment: attachment)
-        attachmentValue.addAttributes(
-            style.attributes,
-            range: NSRange(location: 0, length: attachmentValue.length))
-        result.append(attachmentValue)
+        result.append(self.attachmentText(attachment, style: style))
 
         let percentText = UsageFormatter.percentString(clamped)
         let accessibility = L("%@ %@", accessibilityPrefix, percentText)
@@ -1320,7 +1319,9 @@ extension MenuBarLayoutRenderer {
         let attachment = NSTextAttachment()
         attachment.image = image
         // Bias the pill toward the text's lower half so stacked first-rows do not clip the status item.
+        // Vertical nudge belongs in `bounds.origin.y`: attachments ignore `baselineOffset`.
         let yOffset = ((style.font.capHeight - pillSize.height) / 2 + 1).rounded()
+            + CGFloat(options.verticalAdjustment)
         attachment.bounds = NSRect(
             x: 0,
             y: yOffset,
@@ -1345,14 +1346,19 @@ extension MenuBarLayoutRenderer {
         if !prefix.isEmpty {
             result.append(NSAttributedString(string: "\(prefix) ", attributes: style.attributes))
         }
-        let attachmentValue = NSMutableAttributedString(attachment: attachment)
-        attachmentValue.addAttributes(
-            style.attributes,
-            range: NSRange(location: 0, length: attachmentValue.length))
-        result.append(attachmentValue)
+        result.append(self.attachmentText(attachment, style: style))
 
         let accessibility = L("%@ %@", accessibilityPrefix, percentText)
         return (result, accessibility)
+    }
+
+    /// Attachment runs drop `baselineOffset` so the user's vertical nudge is applied once, via
+    /// `NSAttachment.bounds.origin.y`, instead of also being carried as a glyph shift.
+    private static func attachmentText(_ attachment: NSTextAttachment, style: TokenStyle) -> NSAttributedString {
+        let value = NSMutableAttributedString(attachment: attachment)
+        value.addAttributes(style.attributes, range: NSRange(location: 0, length: value.length))
+        value.removeAttribute(.baselineOffset, range: NSRange(location: 0, length: value.length))
+        return value
     }
 
     private static func progressPillSize(font: NSFont) -> NSSize {
