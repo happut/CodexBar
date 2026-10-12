@@ -1445,6 +1445,7 @@
 "menu_bar_layout_token_weekly_pace" = "Tốc độ hàng tuần";
 "menu_bar_layout_token_auto_pace" = "Tốc độ tự động";
 "menu_bar_layout_token_bar" = "Thanh sử dụng";
+"menu_bar_layout_token_pill" = "Viên tiến độ";
 "menu_bar_layout_token_resets_in" = "Đặt lại sau";
 "menu_bar_layout_token_reset_at" = "Đặt lại lúc";
 "menu_bar_layout_token_runs_out" = "Sắp hết";

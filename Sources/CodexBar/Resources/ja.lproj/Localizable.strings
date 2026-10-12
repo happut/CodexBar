@@ -1445,6 +1445,7 @@
 "menu_bar_layout_token_weekly_pace" = "週間ペース";
 "menu_bar_layout_token_auto_pace" = "自動ペース";
 "menu_bar_layout_token_bar" = "使用量バー";
+"menu_bar_layout_token_pill" = "進度ピル";
 "menu_bar_layout_token_resets_in" = "リセットまで";
 "menu_bar_layout_token_reset_at" = "リセット時刻";
 "menu_bar_layout_token_runs_out" = "使い切り";

@@ -1475,6 +1475,7 @@
 "menu_bar_layout_token_weekly_pace" = "每週節奏";
 "menu_bar_layout_token_auto_pace" = "自動節奏";
 "menu_bar_layout_token_bar" = "用量列";
+"menu_bar_layout_token_pill" = "進度膠囊";
 "menu_bar_layout_token_resets_in" = "重設倒數";
 "menu_bar_layout_token_reset_at" = "重設時間";
 "menu_bar_layout_token_runs_out" = "預計用盡";

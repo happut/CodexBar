@@ -657,6 +657,15 @@ final class MenuBarLayoutRenderer {
         {
             return rendered
         }
+        if let rendered = self.renderUsageMeterItem(
+            item,
+            data: data,
+            style: style,
+            options: options,
+            providerTintColor: providerTintColor)
+        {
+            return rendered
+        }
 
         switch item {
         case .icon:
@@ -700,27 +709,6 @@ final class MenuBarLayoutRenderer {
                 unavailableLabel: L("%@ unavailable", accessibilityPrefix),
                 accessibilityPrefix: accessibilityPrefix,
                 attributes: attributes)
-        case .usageBar:
-            guard let window = data.automatic else {
-                return self.textToken(
-                    self.missingValue,
-                    accessibilityText: L("Usage bar unavailable"),
-                    attributes: style.attributes)
-            }
-            let displayedPercent = options.showUsed ? window.usedPercent : window.remainingPercent
-            let filled = Int((displayedPercent.clamped(to: 0...100) / 100 * 3).rounded())
-            let value = String(repeating: "▮", count: filled) + String(repeating: "▯", count: 3 - filled)
-            return self.textToken(
-                value,
-                accessibilityText: L("Usage bar, %d of 3 filled", filled),
-                attributes: style.attributes)
-        case let .progressBar(window):
-            return self.progressBarToken(
-                window,
-                data: data,
-                style: style,
-                options: options,
-                providerTintColor: providerTintColor)
         case .resetCountdown, .resetAbsolute:
             let text = MenuBarLayoutResetText(window: data.automatic, provider: data.provider, now: options.now)
             return self.resetToken(
@@ -775,6 +763,52 @@ final class MenuBarLayoutRenderer {
                 attributes: style.attributes)
         case .providerName, .accountLabel, .lanePercent, .extraPercent:
             preconditionFailure("Provider text tokens should render before the main switch")
+        case .usageBar, .progressBar, .progressPill:
+            preconditionFailure("Usage meter tokens should render before the main switch")
+        }
+    }
+
+    /// Character `usageBar` plus graphical `progressBar`/`progressPill` meters. Split out of
+    /// `renderItem` so that switch keeps a manageable branch count.
+    private static func renderUsageMeterItem(
+        _ item: MenuBarLayoutToken,
+        data: MenuBarLayoutRenderData,
+        style: TokenStyle,
+        options: MenuBarLayoutRenderOptions,
+        providerTintColor: NSColor?)
+        -> (value: NSAttributedString, accessibilityText: String?)?
+    {
+        switch item {
+        case .usageBar:
+            guard let window = data.automatic else {
+                return self.textToken(
+                    self.missingValue,
+                    accessibilityText: L("Usage bar unavailable"),
+                    attributes: style.attributes)
+            }
+            let displayedPercent = options.showUsed ? window.usedPercent : window.remainingPercent
+            let filled = Int((displayedPercent.clamped(to: 0...100) / 100 * 3).rounded())
+            let value = String(repeating: "▮", count: filled) + String(repeating: "▯", count: 3 - filled)
+            return self.textToken(
+                value,
+                accessibilityText: L("Usage bar, %d of 3 filled", filled),
+                attributes: style.attributes)
+        case let .progressBar(window):
+            return self.progressBarToken(
+                window,
+                data: data,
+                style: style,
+                options: options,
+                providerTintColor: providerTintColor)
+        case let .progressPill(window):
+            return self.progressPillToken(
+                window,
+                data: data,
+                style: style,
+                options: options,
+                providerTintColor: providerTintColor)
+        default:
+            return nil
         }
     }
 
@@ -1242,6 +1276,126 @@ extension MenuBarLayoutRenderer {
                 tint.withAlphaComponent(alpha).setFill()
                 fillPath.fill()
             }
+            return true
+        }
+    }
+
+    /// Colorful pill meter matching consumer health/quota widgets: gray track, gradient accent fill,
+    /// and the percent value typeset inside the pill. Kept as a separate token so the original
+    /// plain `progressBar` stays available unchanged.
+    private static func progressPillToken(
+        _ window: PercentWindow,
+        data: MenuBarLayoutRenderData,
+        style: TokenStyle,
+        options: MenuBarLayoutRenderOptions,
+        providerTintColor: NSColor?)
+        -> (value: NSAttributedString, accessibilityText: String?)
+    {
+        let accessibilityPrefix = self.windowAccessibilityLabel(window, data: data)
+        if window == .automatic, let automaticText = data.automaticText {
+            return self.textToken(
+                automaticText,
+                accessibilityText: L("%@ %@", accessibilityPrefix, automaticText),
+                attributes: style.attributes)
+        }
+        guard let rateWindow = self.window(window, data: data) else {
+            return self.textToken(
+                self.missingValue,
+                accessibilityText: L("%@ unavailable", accessibilityPrefix),
+                attributes: style.attributes)
+        }
+        let percent = options.showUsed ? rateWindow.usedPercent : rateWindow.remainingPercent
+        let clamped = percent.clamped(to: 0...100)
+        let brand = ProviderAccentPalette.color(for: data.provider)
+        let tintColor = providerTintColor
+            ?? NSColor(srgbRed: brand.red, green: brand.green, blue: brand.blue, alpha: 1)
+        let pillSize = self.progressPillSize(font: style.font)
+        let percentText = UsageFormatter.percentString(clamped)
+        let image = self.progressPillImage(
+            fillPercent: clamped,
+            label: percentText,
+            size: pillSize,
+            tint: tintColor,
+            stale: options.isStale && providerTintColor == nil)
+        let attachment = NSTextAttachment()
+        attachment.image = image
+        attachment.bounds = NSRect(
+            x: 0,
+            y: ((style.font.capHeight - pillSize.height) / 2).rounded(),
+            width: pillSize.width,
+            height: pillSize.height)
+
+        let prefix: String
+        switch window {
+        case .session:
+            prefix = self.primaryLabel(data: data).flatMap(\.first).map { String($0).uppercased() }
+                ?? Self.sessionPrefix(rateWindow)
+        case .weekly:
+            let secondaryLabel = Self.secondaryLabel(data: data)
+            prefix = secondaryLabel.flatMap(\.first).map { String($0).uppercased() } ?? "W"
+        case .scopedWeekly:
+            prefix = data.scopedWeeklyTitle.map { String($0.prefix(1)).uppercased() } ?? "F"
+        case .automatic:
+            prefix = ""
+        }
+
+        let result = NSMutableAttributedString()
+        if !prefix.isEmpty {
+            result.append(NSAttributedString(string: "\(prefix) ", attributes: style.attributes))
+        }
+        let attachmentValue = NSMutableAttributedString(attachment: attachment)
+        attachmentValue.addAttributes(
+            style.attributes,
+            range: NSRange(location: 0, length: attachmentValue.length))
+        result.append(attachmentValue)
+
+        let accessibility = L("%@ %@", accessibilityPrefix, percentText)
+        return (result, accessibility)
+    }
+
+    private static func progressPillSize(font: NSFont) -> NSSize {
+        // Tall enough for an interior percent label, still within a single menu-bar line.
+        let height = max(14, (font.capHeight * 1.15).rounded())
+        let width: CGFloat = font.pointSize <= 9 ? 44 : 52
+        return NSSize(width: width, height: height)
+    }
+
+    private static func progressPillImage(
+        fillPercent: Double,
+        label: String,
+        size: NSSize,
+        tint: NSColor,
+        stale: Bool)
+        -> NSImage
+    {
+        let alpha: CGFloat = stale ? 0.55 : 1.0
+        let corner = size.height / 2
+        let labelAttributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: max(8, size.height * 0.48), weight: .semibold),
+            .foregroundColor: NSColor.labelColor.withAlphaComponent(0.85 * alpha),
+        ]
+        return NSImage(size: size, flipped: false) { rect in
+            let track = NSBezierPath(roundedRect: rect, xRadius: corner, yRadius: corner)
+            NSColor.labelColor.withAlphaComponent(0.12 * alpha).setFill()
+            track.fill()
+
+            let fillWidth = rect.width * fillPercent / 100
+            if fillWidth > 0 {
+                let fillRect = NSRect(x: 0, y: 0, width: min(fillWidth, rect.width), height: rect.height)
+                let fillPath = NSBezierPath(roundedRect: fillRect, xRadius: corner, yRadius: corner)
+                let start = tint.blended(withFraction: 0.35, of: .white) ?? tint
+                let gradient = NSGradient(
+                    starting: start.withAlphaComponent(alpha),
+                    ending: tint.withAlphaComponent(alpha))
+                gradient?.draw(in: fillPath, angle: 0)
+            }
+
+            let text = NSAttributedString(string: label, attributes: labelAttributes)
+            let textSize = text.size()
+            let origin = NSPoint(
+                x: ((rect.width - textSize.width) / 2).rounded(),
+                y: ((rect.height - textSize.height) / 2).rounded())
+            text.draw(at: origin)
             return true
         }
     }

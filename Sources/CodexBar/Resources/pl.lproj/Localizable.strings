@@ -1448,6 +1448,7 @@
 "menu_bar_layout_token_weekly_pace" = "Tempo tygodniowe";
 "menu_bar_layout_token_auto_pace" = "Tempo automatyczne";
 "menu_bar_layout_token_bar" = "Pasek użycia";
+"menu_bar_layout_token_pill" = "Pigułka postępu";
 "menu_bar_layout_token_resets_in" = "Reset za";
 "menu_bar_layout_token_reset_at" = "Reset o";
 "menu_bar_layout_token_runs_out" = "Wyczerpie się";

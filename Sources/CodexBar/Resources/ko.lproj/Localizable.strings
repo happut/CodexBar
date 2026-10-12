@@ -1414,6 +1414,7 @@
 "menu_bar_layout_token_weekly_pace" = "주간 속도";
 "menu_bar_layout_token_auto_pace" = "자동 속도";
 "menu_bar_layout_token_bar" = "사용량 막대";
+"menu_bar_layout_token_pill" = "진행률 알약";
 "menu_bar_layout_token_resets_in" = "재설정까지";
 "menu_bar_layout_token_reset_at" = "재설정 시각";
 "menu_bar_layout_token_runs_out" = "소진";

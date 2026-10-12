@@ -1443,6 +1443,7 @@
 "menu_bar_layout_token_weekly_pace" = "Ritmo semanal";
 "menu_bar_layout_token_auto_pace" = "Ritmo automático";
 "menu_bar_layout_token_bar" = "Barra de uso";
+"menu_bar_layout_token_pill" = "Píldora de progreso";
 "menu_bar_layout_token_resets_in" = "Se reinicia en";
 "menu_bar_layout_token_reset_at" = "Reinicio a las";
 "menu_bar_layout_token_runs_out" = "Se agota";

@@ -1447,6 +1447,7 @@
 "menu_bar_layout_token_weekly_pace" = "Wochentempo";
 "menu_bar_layout_token_auto_pace" = "Automatisches Tempo";
 "menu_bar_layout_token_bar" = "Nutzungsleiste";
+"menu_bar_layout_token_pill" = "Fortschritts-Pille";
 "menu_bar_layout_token_resets_in" = "Zurücksetzung in";
 "menu_bar_layout_token_reset_at" = "Zurücksetzung um";
 "menu_bar_layout_token_runs_out" = "Reicht bis";

@@ -981,6 +981,31 @@ struct MenuBarLayoutRendererTests {
     }
 
     @Test
+    func `progress pill renders a colorful meter with an interior label`() throws {
+        let renderer = MenuBarLayoutRenderer()
+        let token = MenuBarLayoutToken.progressPill(window: .session)
+        #expect(MenuBarLayoutPaletteTokens.usage(provider: .codex, snapshot: nil).contains(token))
+        let output = renderer.render(
+            layout: MenuBarLayout(lines: [[token]]),
+            data: self.data(),
+            icon: nil,
+            options: self.options(showUsed: true))
+
+        let text = output.attributedTitle.string
+        #expect(text.hasPrefix("5h "))
+        #expect(text.contains("\u{FFFC}"))
+        let attachmentIndex = try #require(text.firstIndex(of: "\u{FFFC}"))
+        let attachment = output.attributedTitle.attribute(
+            .attachment,
+            at: text.distance(from: text.startIndex, to: attachmentIndex),
+            effectiveRange: nil) as? NSTextAttachment
+        let image = try #require(attachment?.image)
+        #expect(image.size.width > 30)
+        #expect(image.size.height >= 12)
+        #expect(output.accessibilityLabel.contains("25%"))
+    }
+
+    @Test
     func `progress bar drops from older layout projections`() {
         let token = MenuBarLayoutToken.progressBar(window: .session)
         #expect(!token.hasReleasedRepresentation)

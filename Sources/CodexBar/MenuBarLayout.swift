@@ -496,6 +496,8 @@ enum MenuBarLayoutToken: Codable, Hashable, Sendable {
     case usageBar
     /// Graphical progress bar for a semantic window, drawn as an `NSTextAttachment` mini-bar.
     case progressBar(window: PercentWindow)
+    /// Colorful pill meter: rounded track, accent fill, and the percent value inside the pill.
+    case progressPill(window: PercentWindow)
     case resetCountdown
     case resetAbsolute
     /// Explicit reset windows keep separate discriminators so persisted automatic tokens stay unchanged.
@@ -541,21 +543,22 @@ enum MenuBarLayoutToken: Codable, Hashable, Sendable {
     /// failing the whole blob and losing the user's arrangement.
     var hasReleasedRepresentation: Bool {
         switch self {
-        case .extraPercent, .windowResetCountdown, .windowResetAbsolute, .progressBar: false
+        case .extraPercent, .windowResetCountdown, .windowResetAbsolute, .progressBar, .progressPill: false
         default: true
         }
     }
 
     var hasV3Representation: Bool {
         switch self {
-        case .extraPercent, .progressBar: false
+        case .extraPercent, .progressBar, .progressPill: false
         default: true
         }
     }
 
     var hasLegacyRepresentation: Bool {
         switch self {
-        case .conditional, .extraPercent, .hidden, .windowResetCountdown, .windowResetAbsolute, .progressBar: false
+        case .conditional, .extraPercent, .hidden, .windowResetCountdown, .windowResetAbsolute,
+             .progressBar, .progressPill: false
         default: true
         }
     }
