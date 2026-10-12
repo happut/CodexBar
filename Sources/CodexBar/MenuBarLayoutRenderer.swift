@@ -1319,9 +1319,11 @@ extension MenuBarLayoutRenderer {
             stale: options.isStale && providerTintColor == nil)
         let attachment = NSTextAttachment()
         attachment.image = image
+        // Bias the pill toward the text's lower half so stacked first-rows do not clip the status item.
+        let yOffset = ((style.font.capHeight - pillSize.height) / 2 + 1).rounded()
         attachment.bounds = NSRect(
             x: 0,
-            y: ((style.font.capHeight - pillSize.height) / 2).rounded(),
+            y: yOffset,
             width: pillSize.width,
             height: pillSize.height)
 
@@ -1354,9 +1356,14 @@ extension MenuBarLayoutRenderer {
     }
 
     private static func progressPillSize(font: NSFont) -> NSSize {
-        // Tall enough for an interior percent label, still within a single menu-bar line.
-        let height = max(14, (font.capHeight * 1.15).rounded())
-        let width: CGFloat = font.pointSize <= 9 ? 44 : 52
+        // Stacked titles use 8–9pt type and a 9.5pt line box; a taller pill would spill above the
+        // first row and clip against the status item. Single-line titles have room for the taller
+        // consumer-widget style pill with an interior label.
+        let isCompact = font.pointSize <= 9
+        let height = isCompact
+            ? min(9, max(8, (font.pointSize * 0.95).rounded()))
+            : max(14, (font.capHeight * 1.15).rounded())
+        let width: CGFloat = isCompact ? 40 : 52
         return NSSize(width: width, height: height)
     }
 
@@ -1370,8 +1377,11 @@ extension MenuBarLayoutRenderer {
     {
         let alpha: CGFloat = stale ? 0.55 : 1.0
         let corner = size.height / 2
+        let labelFont = NSFont.systemFont(
+            ofSize: max(6, min(11, size.height * 0.52)),
+            weight: .semibold)
         let labelAttributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: max(8, size.height * 0.48), weight: .semibold),
+            .font: labelFont,
             .foregroundColor: NSColor.labelColor.withAlphaComponent(0.85 * alpha),
         ]
         return NSImage(size: size, flipped: false) { rect in
