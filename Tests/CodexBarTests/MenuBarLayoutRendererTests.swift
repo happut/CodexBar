@@ -600,6 +600,25 @@ struct MenuBarLayoutRendererTests {
         #expect(output.statusImage == nil)
     }
 
+    @Test(arguments: [-2, 2])
+    func `shifted two row quota warning icons preserve their red overlay`(adjustment: Int) throws {
+        let base = NSImage(size: NSSize(width: 16, height: 16))
+        base.isTemplate = true
+        let warning = StatusItemController.quotaWarningFlashImage(base: base)
+        let output = MenuBarLayoutRenderer().render(
+            layout: MenuBarLayout(lines: [[.icon, .percent(window: .session)], [.percent(window: .weekly)]]),
+            data: self.data(),
+            icon: warning,
+            options: self.options(verticalAdjustment: adjustment))
+
+        let leadingIcon = try #require(output.leadingIcon)
+        #expect(!leadingIcon.isTemplate)
+        let bitmap = try Self.statusBitmap(image: leadingIcon, scale: 1)
+        let center = try #require(bitmap.colorAt(x: 8, y: 10))
+        #expect(center.alphaComponent > 0)
+        #expect(center.redComponent > center.blueComponent)
+    }
+
     @Test(arguments: [
         MenuBarLayout(lines: [[.icon, .percent(window: .session)], [.icon, .percent(window: .weekly)]]),
         MenuBarLayout(lines: [[.icon], [.percent(window: .weekly)]]),

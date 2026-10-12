@@ -954,7 +954,7 @@ final class MenuBarLayoutRenderer {
                     height: image.size.height))
             return true
         }
-        offsetImage.isTemplate = true
+        offsetImage.isTemplate = image.isTemplate
         return offsetImage
     }
 
