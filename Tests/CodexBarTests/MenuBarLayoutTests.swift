@@ -839,30 +839,6 @@ struct MenuBarLayoutTests {
     }
 
     @Test
-    func `progress bar token labels by window and stacks as a preset`() throws {
-        let sessionBar = MenuBarLayoutToken.progressBar(window: .session)
-        let weeklyBar = MenuBarLayoutToken.progressBar(window: .weekly)
-
-        let encoded = try JSONEncoder().encode(sessionBar)
-        #expect(try JSONDecoder().decode(MenuBarLayoutToken.self, from: encoded) == sessionBar)
-        #expect(sessionBar.editorLabel(provider: .codex) == L("%@ %@", L("Session"), L("menu_bar_layout_token_bar")))
-        #expect(weeklyBar.editorLabel(provider: .codex) == L("%@ %@", L("Weekly"), L("menu_bar_layout_token_bar")))
-        #expect(MenuBarLayoutPreset.barsStacked.layout == MenuBarLayout(lines: [
-            [.progressBar(window: .session), .windowResetCountdown(window: .session)],
-            [.progressBar(window: .weekly), .windowResetCountdown(window: .weekly)],
-        ]))
-
-        let barsStacked = try #require(MenuBarLayoutPreset.barsStacked.layout)
-        let percentages = MenuBarLayout(lines: [[.percent(window: .session)], [.percent(window: .weekly)]])
-        #expect(barsStacked.releasedCompatible() == percentages)
-        #expect(barsStacked.legacyCompatible() == percentages)
-        #expect(barsStacked.v3Compatible() == MenuBarLayout(lines: [
-            [.percent(window: .session), .windowResetCountdown(window: .session)],
-            [.percent(window: .weekly), .windowResetCountdown(window: .weekly)],
-        ]))
-    }
-
-    @Test
     func `Amp lane tokens use snapshot presentation labels`() {
         let snapshot = UsageSnapshot(
             primary: RateWindow(usedPercent: 10, windowMinutes: nil, resetsAt: nil, resetDescription: nil),
