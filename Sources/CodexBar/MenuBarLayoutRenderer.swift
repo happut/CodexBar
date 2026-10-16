@@ -297,6 +297,9 @@ final class MenuBarLayoutRenderer {
         let foregroundColor: NSColor
         let iconHeight: CGFloat
         let attributes: [NSAttributedString.Key: Any]
+        /// Shared width (in characters) for window labels like "5h" / "W". Stacked rows pad the
+        /// shorter label so their meters start at the same x. `nil` keeps labels compact.
+        let windowPrefixWidth: Int?
     }
 
     private let cache: MenuBarLayoutTitleCache
@@ -494,6 +497,15 @@ final class MenuBarLayoutRenderer {
             attributes[.baselineOffset] = Self.stackedBaselineOffset + 2 + CGFloat(options.verticalAdjustment)
         }
 
+        // Stacked rows keep window labels ("5h" / "W") beside their meters; pad every label to the
+        // widest one in this title so the meters line up vertically instead of following text width.
+        let windowPrefixWidth = isStacked
+            ? renderedLines
+            .flatMap(\.self)
+            .map { Self.windowPrefix($0, data: data).count }
+            .max()
+            : nil
+
         for (lineIndex, renderedLine) in renderedLines.enumerated() {
             if lineIndex > 0 {
                 result.append(NSAttributedString(string: "\n", attributes: attributes))
@@ -518,7 +530,8 @@ final class MenuBarLayoutRenderer {
                         font: font,
                         foregroundColor: foregroundColor,
                         iconHeight: Self.iconHeight(size: options.size, isStacked: isStacked),
-                        attributes: attributes),
+                        attributes: attributes,
+                        windowPrefixWidth: windowPrefixWidth),
                     options: options,
                     providerTintColor: providerTintColor)
                 result.append(renderedItem.value)
@@ -841,35 +854,15 @@ final class MenuBarLayoutRenderer {
             automaticText: data.automaticText,
             estimated: data.quotaIsEstimated,
             showUsed: options.showUsed)
-        let prefix = self.windowPrefix(window, data: data)
         let accessibilityPrefix = Self.windowAccessibilityLabel(window, data: data)
+        let prefix = self.paddedWindowPrefix(
+            self.windowPrefix(window, data: data),
+            width: style.windowPrefixWidth)
         let display = prefix.isEmpty ? resolvedValue.text : "\(prefix) \(resolvedValue.text)"
         let accessibility = resolvedValue.isAvailable
             ? L("%@ %@", accessibilityPrefix, resolvedValue.text)
             : L("%@ unavailable", accessibilityPrefix)
         return self.textToken(display, accessibilityText: accessibility, attributes: style.attributes)
-    }
-
-    private static func windowPrefix(_ window: PercentWindow, data: MenuBarLayoutRenderData) -> String {
-        let rateWindow = self.window(window, data: data)
-        let prefix: String
-        let taggedPrefix = Self.taggedSemanticLane(window, provider: data.provider)
-            .flatMap { Self.laneShortLabel($0, provider: data.provider) }
-        switch window {
-        case .session:
-            prefix = taggedPrefix
-                ?? self.primaryLabel(data: data).flatMap(\.first).map { String($0).uppercased() }
-                ?? Self.sessionPrefix(rateWindow)
-        case .weekly:
-            let secondaryLabel = Self.secondaryLabel(data: data)
-            prefix = taggedPrefix
-                ?? secondaryLabel.flatMap(\.first).map { String($0).uppercased() } ?? "W"
-        case .scopedWeekly:
-            prefix = data.scopedWeeklyTitle.map { String($0.prefix(1)).uppercased() } ?? "F"
-        case .automatic:
-            prefix = ""
-        }
-        return prefix
     }
 
     /// A tagged lane announces its own title, so a monthly lane is never read out as "Weekly".
@@ -1189,6 +1182,48 @@ final class MenuBarLayoutRenderer {
 }
 
 extension MenuBarLayoutRenderer {
+    /// Compact label shown beside meters and percent values ("5h", "W", "F"). Empty for tokens
+    /// that carry no window label.
+    private static func windowPrefix(_ token: MenuBarLayoutToken, data: MenuBarLayoutRenderData) -> String {
+        let window: PercentWindow? = switch token {
+        case let .percent(window), let .progressBar(window):
+            window
+        default:
+            nil
+        }
+        guard let window else { return "" }
+        return self.windowPrefix(window, data: data)
+    }
+
+    /// Pads a window label so every stacked row starts its meter/percent at the same x.
+    /// Empty labels stay empty — padding them would fake a prefix where none is shown.
+    private static func paddedWindowPrefix(_ prefix: String, width: Int?) -> String {
+        guard !prefix.isEmpty, let width, width > 0, prefix.count < width else { return prefix }
+        return prefix.padding(toLength: width, withPad: " ", startingAt: 0)
+    }
+
+    private static func windowPrefix(_ window: PercentWindow, data: MenuBarLayoutRenderData) -> String {
+        let rateWindow = self.window(window, data: data)
+        let prefix: String
+        let taggedPrefix = Self.taggedSemanticLane(window, provider: data.provider)
+            .flatMap { Self.laneShortLabel($0, provider: data.provider) }
+        switch window {
+        case .session:
+            prefix = taggedPrefix
+                ?? self.primaryLabel(data: data).flatMap(\.first).map { String($0).uppercased() }
+                ?? Self.sessionPrefix(rateWindow)
+        case .weekly:
+            let secondaryLabel = Self.secondaryLabel(data: data)
+            prefix = taggedPrefix
+                ?? secondaryLabel.flatMap(\.first).map { String($0).uppercased() } ?? "W"
+        case .scopedWeekly:
+            prefix = data.scopedWeeklyTitle.map { String($0.prefix(1)).uppercased() } ?? "F"
+        case .automatic:
+            prefix = ""
+        }
+        return prefix
+    }
+
     private static func fontSize(size: MenuBarLayoutSize, isStacked: Bool) -> CGFloat {
         if isStacked {
             return switch size {
@@ -1329,7 +1364,10 @@ extension MenuBarLayoutRenderer {
             height: barSize.height)
 
         // Keep the window label ("5h" / "W") beside the bar so stacked rows stay unambiguous.
-        let prefix = self.windowPrefix(window, data: data)
+        // Stacked titles pad the label to a shared width so both meters start at the same x.
+        let prefix = self.paddedWindowPrefix(
+            self.windowPrefix(window, data: data),
+            width: style.windowPrefixWidth)
 
         let result = NSMutableAttributedString()
         if !prefix.isEmpty {

@@ -622,9 +622,33 @@ struct MenuBarLayoutRendererTests {
             with: NSSize(width: 200, height: CGFloat.greatestFiniteMagnitude),
             options: [.usesLineFragmentOrigin, .usesFontLeading])
 
-        #expect(output.attributedTitle.string == "5h 25%\nW 60%")
+        #expect(output.attributedTitle.string == "5h 25%\nW  60%")
         #expect(output.accessibilityLabel.contains(L("menu_bar_layout_line", 2)))
         #expect(bounds.height <= 22)
+    }
+
+    @Test
+    func `stacked window meters share one label column`() throws {
+        let renderer = MenuBarLayoutRenderer()
+        let output = renderer.render(
+            layout: MenuBarLayout(lines: [
+                [.progressBar(window: .session)],
+                [.progressBar(window: .weekly)],
+            ]),
+            data: self.data(),
+            icon: nil,
+            options: self.options(showUsed: true))
+
+        let text = output.attributedTitle.string
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        #expect(lines.count == 2)
+        // "5h" is two characters; "W" is padded to match so both bars start at the same x.
+        #expect(lines[0].hasPrefix("5h "))
+        #expect(lines[1].hasPrefix("W  "))
+        let sessionLabel = try #require(lines[0].firstIndex(of: "\u{FFFC}"))
+        let weeklyLabel = try #require(lines[1].firstIndex(of: "\u{FFFC}"))
+        #expect(lines[0].distance(from: lines[0].startIndex, to: sessionLabel)
+            == lines[1].distance(from: lines[1].startIndex, to: weeklyLabel))
     }
 
     @Test(arguments: [false, true], [-2, 0, 2])
@@ -646,7 +670,7 @@ struct MenuBarLayoutRendererTests {
         if adjustment == 0 {
             #expect(leadingIcon === icon)
         }
-        #expect(output.attributedTitle.string == "\(explicitSpace ? " " : "\u{2009}")5h 25%\nW 60%")
+        #expect(output.attributedTitle.string == "\(explicitSpace ? " " : "\u{2009}")5h 25%\nW  60%")
         #expect(!output.attributedTitle.string.contains("\u{FFFC}"))
         let expectedAccessibility = "\(L("%@ icon", "Codex")), \(L("Session")) 25%, "
             + "\(L("menu_bar_layout_line", 2)), \(L("Weekly")) 60%"
@@ -848,7 +872,7 @@ struct MenuBarLayoutRendererTests {
 
         #expect(output.leadingIcon == nil)
         #expect(output.attributedTitle.attribute(.attachment, at: 0, effectiveRange: nil) is NSTextAttachment)
-        #expect(output.attributedTitle.string == "\u{FFFC}\n50%\u{2009}5h 25%\u{2009}W 60%\u{2009}10%")
+        #expect(output.attributedTitle.string == "\u{FFFC}\n50%\u{2009}5h 25%\u{2009}W  60%\u{2009}10%")
         #expect(output.accessibilityLabel.contains(L("menu_bar_layout_line", 2)))
     }
 
