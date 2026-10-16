@@ -297,9 +297,10 @@ final class MenuBarLayoutRenderer {
         let foregroundColor: NSColor
         let iconHeight: CGFloat
         let attributes: [NSAttributedString.Key: Any]
-        /// Shared width (in characters) for window labels like "5h" / "W". Stacked rows pad the
-        /// shorter label so their meters start at the same x. `nil` keeps labels compact.
-        let windowPrefixWidth: Int?
+        /// Shared rendered width (points) for window labels like "5h" / "W". Stacked rows pad the
+        /// shorter label so their meters start at the same x under proportional fonts.
+        /// `nil` keeps labels compact.
+        let windowPrefixWidth: CGFloat?
     }
 
     private let cache: MenuBarLayoutTitleCache
@@ -499,10 +500,14 @@ final class MenuBarLayoutRenderer {
 
         // Stacked rows keep window labels ("5h" / "W") beside their meters; pad every label to the
         // widest one in this title so the meters line up vertically instead of following text width.
-        let windowPrefixWidth = isStacked
+        let windowPrefixWidth: CGFloat? = isStacked
             ? renderedLines
             .flatMap(\.self)
-            .map { Self.windowPrefix($0, data: data).count }
+            .map { token -> CGFloat in
+                let prefix = Self.windowPrefix(token, data: data)
+                guard !prefix.isEmpty else { return 0 }
+                return (prefix as NSString).size(withAttributes: [.font: font]).width
+            }
             .max()
             : nil
 
@@ -857,7 +862,8 @@ final class MenuBarLayoutRenderer {
         let accessibilityPrefix = Self.windowAccessibilityLabel(window, data: data)
         let prefix = self.paddedWindowPrefix(
             self.windowPrefix(window, data: data),
-            width: style.windowPrefixWidth)
+            width: style.windowPrefixWidth,
+            font: style.font)
         let display = prefix.isEmpty ? resolvedValue.text : "\(prefix) \(resolvedValue.text)"
         let accessibility = resolvedValue.isAvailable
             ? L("%@ %@", accessibilityPrefix, resolvedValue.text)
@@ -1195,11 +1201,19 @@ extension MenuBarLayoutRenderer {
         return self.windowPrefix(window, data: data)
     }
 
-    /// Pads a window label so every stacked row starts its meter/percent at the same x.
+    /// Pads a window label with spaces until its rendered width matches `width` points so every
+    /// stacked row starts its meter/percent at the same x under proportional fonts.
     /// Empty labels stay empty — padding them would fake a prefix where none is shown.
-    private static func paddedWindowPrefix(_ prefix: String, width: Int?) -> String {
-        guard !prefix.isEmpty, let width, width > 0, prefix.count < width else { return prefix }
-        return prefix.padding(toLength: width, withPad: " ", startingAt: 0)
+    private static func paddedWindowPrefix(_ prefix: String, width: CGFloat?, font: NSFont) -> String {
+        guard !prefix.isEmpty, let width, width > 0.5 else { return prefix }
+        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+        var result = prefix
+        var measured = (result as NSString).size(withAttributes: attributes).width
+        while measured + 0.5 < width {
+            result.append(" ")
+            measured = (result as NSString).size(withAttributes: attributes).width
+        }
+        return result
     }
 
     private static func windowPrefix(_ window: PercentWindow, data: MenuBarLayoutRenderData) -> String {
@@ -1367,7 +1381,8 @@ extension MenuBarLayoutRenderer {
         // Stacked titles pad the label to a shared width so both meters start at the same x.
         let prefix = self.paddedWindowPrefix(
             self.windowPrefix(window, data: data),
-            width: style.windowPrefixWidth)
+            width: style.windowPrefixWidth,
+            font: style.font)
 
         let result = NSMutableAttributedString()
         if !prefix.isEmpty {

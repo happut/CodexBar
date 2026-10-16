@@ -628,7 +628,7 @@ struct MenuBarLayoutRendererTests {
     }
 
     @Test
-    func `stacked window meters share one label column`() throws {
+    func `stacked window meters share one label column`() {
         let renderer = MenuBarLayoutRenderer()
         let output = renderer.render(
             layout: MenuBarLayout(lines: [
@@ -642,13 +642,26 @@ struct MenuBarLayoutRendererTests {
         let text = output.attributedTitle.string
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         #expect(lines.count == 2)
-        // "5h" is two characters; "W" is padded to match so both bars start at the same x.
-        #expect(lines[0].hasPrefix("5h "))
-        #expect(lines[1].hasPrefix("W  "))
-        let sessionLabel = try #require(lines[0].firstIndex(of: "\u{FFFC}"))
-        let weeklyLabel = try #require(lines[1].firstIndex(of: "\u{FFFC}"))
-        #expect(lines[0].distance(from: lines[0].startIndex, to: sessionLabel)
-            == lines[1].distance(from: lines[1].startIndex, to: weeklyLabel))
+        #expect(lines[0].hasPrefix("5h"))
+        #expect(lines[1].hasPrefix("W"))
+        // Proportional fonts make character counts a poor alignment proxy; measure the rendered
+        // x origin of each meter attachment instead.
+        let full = output.attributedTitle.string as NSString
+        var barOrigins: [CGFloat] = []
+        output.attributedTitle.enumerateAttribute(
+            .attachment, in: NSRange(location: 0, length: output.attributedTitle.length))
+        { value, range, _ in
+            guard value is NSTextAttachment else { return }
+            let lineRange = full.lineRange(for: range)
+            let prefix = full.substring(with: NSRange(
+                location: lineRange.location,
+                length: range.location - lineRange.location))
+            let x = (prefix as NSString).size(withAttributes: output.attributedTitle.attributes(
+                at: range.location, effectiveRange: nil)).width
+            barOrigins.append(x)
+        }
+        #expect(barOrigins.count == 2)
+        #expect(abs(barOrigins[0] - barOrigins[1]) < 1.0)
     }
 
     @Test(arguments: [false, true], [-2, 0, 2])
