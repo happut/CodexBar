@@ -622,7 +622,7 @@ struct MenuBarLayoutRendererTests {
             with: NSSize(width: 200, height: CGFloat.greatestFiniteMagnitude),
             options: [.usesLineFragmentOrigin, .usesFontLeading])
 
-        #expect(output.attributedTitle.string == "5h 25%\nW  60%")
+        #expect(output.attributedTitle.string == "5h\t25%\nW\t60%")
         #expect(output.accessibilityLabel.contains(L("menu_bar_layout_line", 2)))
         #expect(bounds.height <= 22)
     }
@@ -642,8 +642,8 @@ struct MenuBarLayoutRendererTests {
         let text = output.attributedTitle.string
         let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         #expect(lines.count == 2)
-        #expect(lines[0].hasPrefix("5h"))
-        #expect(lines[1].hasPrefix("W"))
+        #expect(lines[0].hasPrefix("5h\t"))
+        #expect(lines[1].hasPrefix("W\t"))
         // Proportional fonts make character counts a poor alignment proxy; measure the rendered
         // x origin of each meter attachment instead.
         let full = output.attributedTitle.string as NSString
@@ -683,7 +683,7 @@ struct MenuBarLayoutRendererTests {
         if adjustment == 0 {
             #expect(leadingIcon === icon)
         }
-        #expect(output.attributedTitle.string == "\(explicitSpace ? " " : "\u{2009}")5h 25%\nW  60%")
+        #expect(output.attributedTitle.string == "\(explicitSpace ? " " : "\u{2009}")5h\t25%\nW\t60%")
         #expect(!output.attributedTitle.string.contains("\u{FFFC}"))
         let expectedAccessibility = "\(L("%@ icon", "Codex")), \(L("Session")) 25%, "
             + "\(L("menu_bar_layout_line", 2)), \(L("Weekly")) 60%"
@@ -885,7 +885,7 @@ struct MenuBarLayoutRendererTests {
 
         #expect(output.leadingIcon == nil)
         #expect(output.attributedTitle.attribute(.attachment, at: 0, effectiveRange: nil) is NSTextAttachment)
-        #expect(output.attributedTitle.string == "\u{FFFC}\n50%\u{2009}5h 25%\u{2009}W  60%\u{2009}10%")
+        #expect(output.attributedTitle.string == "\u{FFFC}\n50%\u{2009}5h\t25%\u{2009}W\t60%\u{2009}10%")
         #expect(output.accessibilityLabel.contains(L("menu_bar_layout_line", 2)))
     }
 
