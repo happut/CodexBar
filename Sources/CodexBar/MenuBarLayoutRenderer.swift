@@ -508,22 +508,12 @@ final class MenuBarLayoutRenderer {
             attributes[.baselineOffset] = Self.stackedBaselineOffset + 2 + CGFloat(options.verticalAdjustment)
         }
 
-        // Stacked rows keep window labels ("5h" / "W") beside their meters; pad every label to the
-        // widest one in this title so the meters line up vertically instead of following text width.
-        // Exact alignment for proportional fonts: measure the widest label once, then let every row
-        // continue at the same tab-stop x. The tab lands on that x regardless of how wide the label
-        // actually draws, so measurement rounding cannot stagger the meters.
-        let windowPrefixColumnX: CGFloat? = isStacked
-            ? renderedLines
-            .flatMap(\.self)
-            .map { token -> CGFloat in
-                let prefix = Self.windowPrefix(token, data: data)
-                guard !prefix.isEmpty else { return 0 }
-                return (prefix as NSString).size(withAttributes: [.font: font]).width
-            }
-            .max()
-            .map { $0 + 4 }
-            : nil
+        let windowPrefixColumnX = Self.leadingWindowLabelColumnX(
+            lines: renderedLines,
+            isStacked: isStacked,
+            leadingIcon: leadingIcon != nil,
+            data: data,
+            font: font)
 
         if let windowPrefixColumnX {
             paragraphStyle.tabStops = [
@@ -537,6 +527,7 @@ final class MenuBarLayoutRenderer {
                 result.append(NSAttributedString(string: "\n", attributes: attributes))
             }
             var accessibilityParts: [String] = []
+            var usedWindowLabelTab = false
             for (tokenIndex, token) in renderedLine.enumerated() {
                 // The leading icon is surfaced as `button.image` so AppKit applies the system's
                 // active/inactive display tinting; it is not repeated inside the attributed title,
@@ -548,6 +539,15 @@ final class MenuBarLayoutRenderer {
                 if tokenIndex > 0, token != .space, renderedLine[tokenIndex - 1] != .space {
                     result.append(NSAttributedString(string: "\u{2009}", attributes: attributes))
                 }
+                // One tab per row: the leading window label claims it so later labeled tokens
+                // (for example percent after a meter) keep ordinary spacing mid-line.
+                var tokenColumnX: CGFloat?
+                if !usedWindowLabelTab, Self.isLeadingWindowLabelToken(token),
+                   !Self.windowPrefix(token, data: data).isEmpty
+                {
+                    usedWindowLabelTab = true
+                    tokenColumnX = windowPrefixColumnX
+                }
                 let renderedItem = Self.renderItem(
                     token,
                     data: data,
@@ -557,7 +557,7 @@ final class MenuBarLayoutRenderer {
                         foregroundColor: foregroundColor,
                         iconHeight: Self.iconHeight(size: options.size, isStacked: isStacked),
                         attributes: attributes,
-                        windowPrefixColumnX: windowPrefixColumnX),
+                        windowPrefixColumnX: tokenColumnX),
                     options: options,
                     providerTintColor: providerTintColor)
                 result.append(renderedItem.value)
@@ -1262,6 +1262,63 @@ extension MenuBarLayoutRenderer {
     /// Window label followed by a tab when a stacked column is active. The tab jumps to the shared
     /// tab-stop x, so the meter/percent starts on one column no matter how wide the label draws.
     /// Empty labels stay empty — a tab there would fake a prefix where none is shown.
+    /// Stacked rows keep window labels ("5h" / "W") beside their meters. A shared tab stop puts
+    /// every meter on one column under proportional fonts — but only when each row starts with
+    /// that window label. If another token (provider name, icon, …) leads the row, its width is
+    /// row-specific and an absolute tab would jump past the stop and insert a gap instead of
+    /// aligning. Those layouts keep the compact natural spacing.
+    private static func leadingWindowLabelColumnX(
+        lines: [[MenuBarLayoutToken]],
+        isStacked: Bool,
+        leadingIcon: Bool,
+        data: MenuBarLayoutRenderData,
+        font: NSFont)
+        -> CGFloat?
+    {
+        guard isStacked else { return nil }
+        var labels: [String] = []
+        for (lineIndex, line) in lines.enumerated() where !line.isEmpty {
+            guard let first = self.firstContentToken(
+                in: line,
+                skipsLeadingIcon: leadingIcon && lineIndex == 0)
+            else { return nil }
+            guard self.isLeadingWindowLabelToken(first) else { return nil }
+            let prefix = self.windowPrefix(first, data: data)
+            guard !prefix.isEmpty else { return nil }
+            labels.append(prefix)
+        }
+        guard !labels.isEmpty else { return nil }
+        return labels
+            .map { ($0 as NSString).size(withAttributes: [.font: font]).width }
+            .max()
+            .map { $0 + 4 }
+    }
+
+    /// First token that lands in the title. A promoted leading icon never draws there.
+    private static func firstContentToken(
+        in line: [MenuBarLayoutToken],
+        skipsLeadingIcon: Bool)
+        -> MenuBarLayoutToken?
+    {
+        var index = 0
+        if skipsLeadingIcon, line.first == .icon {
+            index = 1
+        }
+        guard index < line.count else { return nil }
+        return line[index]
+    }
+
+    /// Leading window labels can share a tab column; anything else (or a label after other
+    /// content) keeps natural spacing so row-specific prefixes cannot overshoot the tab stop.
+    private static func isLeadingWindowLabelToken(_ token: MenuBarLayoutToken) -> Bool {
+        switch token {
+        case .percent, .progressBar:
+            true
+        default:
+            false
+        }
+    }
+
     private static func windowPrefixRun(_ prefix: String, columnX: CGFloat?) -> String {
         guard !prefix.isEmpty else { return prefix }
         guard columnX != nil else { return prefix }

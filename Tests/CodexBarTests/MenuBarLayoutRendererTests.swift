@@ -664,6 +664,28 @@ struct MenuBarLayoutRendererTests {
         #expect(abs(barOrigins[0] - barOrigins[1]) < 1.0)
     }
 
+    @Test
+    func `non-leading window labels keep compact spacing without a shared tab`() {
+        let renderer = MenuBarLayoutRenderer()
+        // Provider name before the meter makes the pre-tab width row-specific; a shared tab stop
+        // would overshoot and insert a gap, so those rows must stay on natural spacing.
+        let output = renderer.render(
+            layout: MenuBarLayout(lines: [
+                [.providerName, .progressBar(window: .session)],
+                [.progressBar(window: .weekly)],
+            ]),
+            data: self.data(),
+            icon: nil,
+            options: self.options(showUsed: true))
+
+        let text = output.attributedTitle.string
+        #expect(!text.contains("\t"))
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        #expect(lines.count == 2)
+        #expect(lines[0].contains("Codex"))
+        #expect(lines[1].hasPrefix("W "))
+    }
+
     @Test(arguments: [false, true], [-2, 0, 2])
     func `single provider icon spans two text rows`(explicitSpace: Bool, adjustment: Int) throws {
         let icon = NSImage(size: NSSize(width: 16, height: 16))
@@ -683,7 +705,12 @@ struct MenuBarLayoutRendererTests {
         if adjustment == 0 {
             #expect(leadingIcon === icon)
         }
-        #expect(output.attributedTitle.string == "\(explicitSpace ? " " : "\u{2009}")5h\t25%\nW\t60%")
+        // With an explicit leading space the label is not the row's leading content, so the
+        // shared tab column stays off. Without it, the promoted icon leaves percent first.
+        let expected = explicitSpace
+            ? "\(explicitSpace ? " " : "")5h 25%\nW 60%"
+            : "\u{2009}5h\t25%\nW\t60%"
+        #expect(output.attributedTitle.string == expected)
         #expect(!output.attributedTitle.string.contains("\u{FFFC}"))
         let expectedAccessibility = "\(L("%@ icon", "Codex")), \(L("Session")) 25%, "
             + "\(L("menu_bar_layout_line", 2)), \(L("Weekly")) 60%"
@@ -885,7 +912,9 @@ struct MenuBarLayoutRendererTests {
 
         #expect(output.leadingIcon == nil)
         #expect(output.attributedTitle.attribute(.attachment, at: 0, effectiveRange: nil) is NSTextAttachment)
-        #expect(output.attributedTitle.string == "\u{FFFC}\n50%\u{2009}5h\t25%\u{2009}W\t60%\u{2009}10%")
+        // Automatic percent leads the row with no label; the session/weekly values keep compact
+        // spacing instead of claiming the leading-label tab column.
+        #expect(output.attributedTitle.string == "\u{FFFC}\n50%\u{2009}5h 25%\u{2009}W 60%\u{2009}10%")
         #expect(output.accessibilityLabel.contains(L("menu_bar_layout_line", 2)))
     }
 
