@@ -398,6 +398,7 @@ final class MenuBarLayoutRenderer {
         let breakAttributes = top.attributedTitle.attributes(at: top.attributedTitle.length - 1, effectiveRange: nil)
         result.append(NSAttributedString(string: "\n", attributes: breakAttributes))
         result.append(bottom.attributedTitle)
+        self.normalizeWindowLabelTabStops(in: result)
         let secondLineLabel = L("menu_bar_layout_line", 2)
         let accessibilityLabel = "\(topProviderName), \(top.accessibilityLabel), " +
             "\(secondLineLabel), \(bottomProviderName), \(bottom.accessibilityLabel)"
@@ -406,6 +407,32 @@ final class MenuBarLayoutRenderer {
             accessibilityLabel: accessibilityLabel,
             leadingIcon: nil,
             statusImage: Self.statusImage(title: result, foregroundColor: .controlTextColor))
+    }
+
+    /// Each provider row is rendered alone and picks its own `max(label)+4` tab stop. When the
+    /// rows are stacked, a wider label on one provider would otherwise leave the other provider's
+    /// meters on a different column. Rewrite every paragraph to the widest stop in the title.
+    private static func normalizeWindowLabelTabStops(in title: NSMutableAttributedString) {
+        guard title.length > 0 else { return }
+        var sharedX: CGFloat = 0
+        title.enumerateAttribute(
+            .paragraphStyle, in: NSRange(location: 0, length: title.length))
+        { value, _, _ in
+            guard let style = value as? NSParagraphStyle else { return }
+            for tab in style.tabStops where tab.location > sharedX {
+                sharedX = tab.location
+            }
+        }
+        guard sharedX > 0 else { return }
+        title.enumerateAttribute(
+            .paragraphStyle, in: NSRange(location: 0, length: title.length))
+        { value, range, _ in
+            guard let style = value as? NSParagraphStyle, !style.tabStops.isEmpty else { return }
+            let updated = (style.mutableCopy() as? NSMutableParagraphStyle) ?? NSMutableParagraphStyle()
+            updated.tabStops = [NSTextTab(textAlignment: .left, location: sharedX, options: [:])]
+            updated.defaultTabInterval = sharedX
+            title.addAttribute(.paragraphStyle, value: updated, range: range)
+        }
     }
 
     private static func namingProvider(

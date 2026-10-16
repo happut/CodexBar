@@ -665,6 +665,49 @@ struct MenuBarLayoutRendererTests {
     }
 
     @Test
+    func `composed provider rows share one window label tab stop`() {
+        let renderer = MenuBarLayoutRenderer()
+        // Each row is rendered alone and would pick its own max(label)+4 stop ("5h" vs "W").
+        // Composition must rewrite both paragraphs to the wider stop so the meters line up.
+        let top = renderer.render(
+            layout: MenuBarLayout(lines: [[.progressBar(window: .session)]]),
+            data: self.data(provider: .codex),
+            icon: nil,
+            options: self.options(showUsed: true, forceStackedStyle: true))
+        let bottom = renderer.render(
+            layout: MenuBarLayout(lines: [[.progressBar(window: .weekly)]]),
+            data: self.data(provider: .claude),
+            icon: nil,
+            options: self.options(showUsed: true, forceStackedStyle: true))
+        let composed = MenuBarLayoutRenderer.composeStackedProviderRows(
+            top: top,
+            bottom: bottom,
+            topProviderName: "Codex",
+            bottomProviderName: "Claude")
+
+        let text = composed.attributedTitle.string
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        #expect(lines.count == 2)
+        #expect(lines[0].hasPrefix("5h\t"))
+        #expect(lines[1].hasPrefix("W\t"))
+        let full = text as NSString
+        var barOrigins: [CGFloat] = []
+        composed.attributedTitle.enumerateAttribute(
+            .attachment, in: NSRange(location: 0, length: composed.attributedTitle.length))
+        { value, range, _ in
+            guard value is NSTextAttachment else { return }
+            let lineRange = full.lineRange(for: range)
+            let prefix = full.substring(with: NSRange(
+                location: lineRange.location,
+                length: range.location - lineRange.location))
+            barOrigins.append((prefix as NSString).size(withAttributes: composed.attributedTitle.attributes(
+                at: range.location, effectiveRange: nil)).width)
+        }
+        #expect(barOrigins.count == 2)
+        #expect(abs(barOrigins[0] - barOrigins[1]) < 1.0)
+    }
+
+    @Test
     func `non-leading window labels keep compact spacing without a shared tab`() {
         let renderer = MenuBarLayoutRenderer()
         // Provider name before the meter makes the pre-tab width row-specific; a shared tab stop
